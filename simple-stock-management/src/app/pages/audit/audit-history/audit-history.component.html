@@ -1,0 +1,223 @@
+<div class="space-y-6">
+    <app-page-breadcrumb pageTitle="Audit History" />
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total transactions</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ totalCount }}</p>
+        </section>
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Transactions today</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ todayCount }}</p>
+        </section>
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Rejections, damage, or cancellations</p>
+            <p class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ exceptionCount }}</p>
+        </section>
+    </div>
+
+    <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="flex flex-col gap-4 border-b border-gray-100 p-5 dark:border-gray-800">
+            <div>
+                <h2 class="font-medium text-gray-800 dark:text-white/90">Inventory activity</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Review recorded stock transactions and their current status.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <input
+                        type="search"
+                        aria-label="Search audit history"
+                        placeholder="Search document, product, party..."
+                        [value]="searchTerm"
+                        (input)="onSearch($event)"
+                        class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                />
+
+                <select
+                        aria-label="Filter by transaction type"
+                        (change)="onTypeChange($event)"
+                        class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden dark:border-gray-700 dark:text-white/90"
+                >
+                    <option value="ALL">All transaction types</option>
+                    @for (type of transactionTypes; track type.value) {
+                        <option [value]="type.value">{{ type.label }}</option>
+                    }
+                </select>
+
+                <input
+                        type="date"
+                        aria-label="From date"
+                        [value]="dateFrom"
+                        (change)="onDateFromChange($event)"
+                        class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden dark:border-gray-700 dark:text-white/90"
+                />
+
+                <input
+                        type="date"
+                        aria-label="To date"
+                        [value]="dateTo"
+                        (change)="onDateToChange($event)"
+                        class="h-10 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden dark:border-gray-700 dark:text-white/90"
+                />
+            </div>
+        </div>
+
+        <div class="overflow-x-auto p-5">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Document</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Action</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Product(s)</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Department / Party</th>
+                    <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Details</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                    @for (transaction of transactions; track transaction.id) {
+                        <tr>
+                            <td class="whitespace-nowrap px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ transaction.date }}
+                            </td>
+                            <td class="px-4 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
+                                {{ transaction.documentNo }}
+                                @if (transaction.relatedTransactionId) {
+                                    <span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">
+                    Related to {{ transaction.reference }}
+                  </span>
+                                }
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ typeLabel(transaction.type) }}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ productSummary(transaction) }}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ transaction.department || '—' }}
+                                @if (transaction.party) {
+                                    <span class="block text-xs text-gray-500 dark:text-gray-400">{{ transaction.party }}</span>
+                                }
+                            </td>
+                            <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">
+                                {{ totalQuantity(transaction) }}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ statusLabel(transaction) }}
+                            </td>
+                            <td class="px-4 py-4 text-end">
+                                <button
+                                        type="button"
+                                        class="text-sm font-medium text-brand-500 hover:text-brand-600"
+                                        (click)="openDetails(transaction)"
+                                >
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                    } @empty {
+                        <tr>
+                            <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No transactions match these filters.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@if (selectedTransaction; as transaction) {
+    <div
+            class="fixed inset-0 z-[99999] flex items-center justify-center bg-gray-900/50 p-4"
+            (click)="closeDetails()"
+    >
+        <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="audit-detail-title"
+                class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white shadow-theme-xl dark:bg-gray-900"
+                (click)="$event.stopPropagation()"
+        >
+            <div class="flex items-start justify-between border-b border-gray-100 p-5 dark:border-gray-800">
+                <div>
+                    <h2 id="audit-detail-title" class="text-lg font-semibold text-gray-800 dark:text-white/90">
+                        {{ transaction.documentNo }}
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ typeLabel(transaction.type) }} · {{ transaction.date }}
+                    </p>
+                </div>
+                <button
+                        type="button"
+                        aria-label="Close details"
+                        class="rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                        (click)="closeDetails()"
+                >
+                    Close
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Status</p>
+                    <p class="mt-1 text-sm text-gray-800 dark:text-white/90">{{ statusLabel(transaction) }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Department</p>
+                    <p class="mt-1 text-sm text-gray-800 dark:text-white/90">{{ transaction.department || '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Party</p>
+                    <p class="mt-1 text-sm text-gray-800 dark:text-white/90">{{ transaction.party || '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Reference</p>
+                    <p class="mt-1 text-sm text-gray-800 dark:text-white/90">{{ transaction.reference || '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Tax type</p>
+                    <p class="mt-1 text-sm text-gray-800 dark:text-white/90">{{ transaction.taxType }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Reason</p>
+                    <p class="mt-1 text-sm text-gray-800 dark:text-white/90">{{ transaction.reason || '—' }}</p>
+                </div>
+            </div>
+
+            <div class="px-5 pb-5">
+                <h3 class="mb-3 font-medium text-gray-800 dark:text-white/90">Transaction lines</h3>
+                <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th class="px-3 py-2 text-start text-xs font-medium text-gray-500 dark:text-gray-400">Product</th>
+                            <th class="px-3 py-2 text-start text-xs font-medium text-gray-500 dark:text-gray-400">SKU</th>
+                            <th class="px-3 py-2 text-end text-xs font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                            <th class="px-3 py-2 text-end text-xs font-medium text-gray-500 dark:text-gray-400">Unit price</th>
+                            <th class="px-3 py-2 text-end text-xs font-medium text-gray-500 dark:text-gray-400">Tax rate</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                            @for (line of transaction.lines; track line.id) {
+                                <tr>
+                                    <td class="px-3 py-3 text-sm text-gray-800 dark:text-white/90">{{ line.productName }}</td>
+                                    <td class="px-3 py-3 text-sm text-gray-600 dark:text-gray-300">{{ line.sku }}</td>
+                                    <td class="px-3 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ line.quantity }} {{ line.unit }}</td>
+                                    <td class="px-3 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ line.unitPrice }}</td>
+                                    <td class="px-3 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ line.taxRate }}%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+}

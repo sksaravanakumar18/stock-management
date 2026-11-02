@@ -1,0 +1,118 @@
+<div class="space-y-6">
+    <app-page-breadcrumb pageTitle="Supplier Master" />
+
+    <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,0.8fr)]">
+        <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="flex flex-col gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+                <h2 class="font-medium text-gray-800 dark:text-white/90">Suppliers</h2>
+
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <input
+                            type="search"
+                            aria-label="Search suppliers"
+                            placeholder="Search suppliers"
+                            [value]="searchTerm"
+                            (input)="onSearchInput($event)"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 sm:w-52 dark:border-gray-700 dark:text-white/90"
+                    />
+
+                    <div class="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800" aria-label="Filter suppliers">
+                        <button type="button" [attr.aria-pressed]="statusFilter === 'ALL'"
+                                [ngClass]="statusFilter === 'ALL' ? 'bg-white text-gray-800 shadow-theme-xs dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                                class="rounded-md px-3 py-1.5 text-sm" (click)="setStatusFilter('ALL')">All</button>
+                        <button type="button" [attr.aria-pressed]="statusFilter === 'ACTIVE'"
+                                [ngClass]="statusFilter === 'ACTIVE' ? 'bg-white text-gray-800 shadow-theme-xs dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                                class="rounded-md px-3 py-1.5 text-sm" (click)="setStatusFilter('ACTIVE')">Active</button>
+                        <button type="button" [attr.aria-pressed]="statusFilter === 'INACTIVE'"
+                                [ngClass]="statusFilter === 'INACTIVE' ? 'bg-white text-gray-800 shadow-theme-xs dark:bg-gray-700 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                                class="rounded-md px-3 py-1.5 text-sm" (click)="setStatusFilter('INACTIVE')">Inactive</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5">
+                <app-dynamic-grid
+                        [columns]="config.columns"
+                        [rows]="suppliers"
+                        [rowKey]="config.rowKey"
+                        [showSearch]="false"
+                        [pageSize]="10"
+                        [emptyMessage]="'No suppliers match these filters.'"
+                        (actionTriggered)="handleGridAction($event)"
+                />
+            </div>
+        </section>
+
+        <section class="h-fit rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+                <h2 class="font-medium text-gray-800 dark:text-white/90">
+                    {{ editingId ? 'Edit Supplier' : 'Add Supplier' }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Supplier name and code must be unique.
+                </p>
+            </div>
+
+            <div class="space-y-4 p-5">
+                @if (formError) {
+                    <p role="alert" class="text-sm text-error-600 dark:text-error-400">{{ formError }}</p>
+                }
+
+                <app-dynamic-form
+                        [fields]="formFields"
+                        [submitLabel]="editingId ? 'Save Changes' : 'Add Supplier'"
+                        [showCancelButton]="!!editingId"
+                        [cancelLabel]="'Cancel'"
+                        (formSubmit)="saveSupplier($event)"
+                        (formCancel)="cancelEdit()"
+                />
+            </div>
+        </section>
+    </div>
+
+    @if (deleteWarning) {
+        <div class="fixed inset-0 z-[100000] overflow-y-auto bg-gray-950/50 p-4" role="presentation" (click)="cancelDelete()">
+            <section
+                    class="mx-auto my-6 w-full max-w-md rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="delete-modal-title"
+                    (click)="$event.stopPropagation()"
+            >
+                <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+                    <h2 id="delete-modal-title" class="font-medium text-gray-800 dark:text-white/90">
+                        Confirm Delete
+                    </h2>
+                    <button
+                            type="button"
+                            class="rounded-lg px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                            aria-label="Close delete dialog"
+                            (click)="cancelDelete()"
+                    >
+                        Close
+                    </button>
+                </div>
+
+                <div class="space-y-4 p-5">
+                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ deleteWarning }}</p>
+                    <div class="flex gap-2 justify-end">
+                        <button
+                                type="button"
+                                class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/[0.03]"
+                                (click)="cancelDelete()"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                                type="button"
+                                class="inline-flex h-10 items-center justify-center rounded-lg bg-error-600 px-4 text-sm font-medium text-white hover:bg-error-700"
+                                (click)="confirmDelete()"
+                        >
+                            Delete anyway
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    }
+</div>

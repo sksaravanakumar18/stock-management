@@ -1,0 +1,183 @@
+<div class="space-y-6">
+    <app-page-breadcrumb pageTitle="Returns / Cancellations / Rejections" />
+
+    <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200 dark:border-gray-800">
+            <button
+                type="button"
+                (click)="setTab('return')"
+                [ngClass]="activeTab === 'return'
+                    ? 'border-b-2 border-brand-500 text-brand-600 dark:text-brand-400'
+                    : 'text-gray-600 dark:text-gray-400'"
+                class="flex-1 px-6 py-3 text-center text-sm font-medium hover:text-gray-900 dark:hover:text-gray-300"
+            >
+                Customer Returns
+            </button>
+            <button
+                type="button"
+                (click)="setTab('cancel')"
+                [ngClass]="activeTab === 'cancel'
+                    ? 'border-b-2 border-brand-500 text-brand-600 dark:text-brand-400'
+                    : 'text-gray-600 dark:text-gray-400'"
+                class="flex-1 px-6 py-3 text-center text-sm font-medium hover:text-gray-900 dark:hover:text-gray-300"
+            >
+                Cancel Orders
+            </button>
+            <button
+                type="button"
+                (click)="setTab('reject')"
+                [ngClass]="activeTab === 'reject'
+                    ? 'border-b-2 border-brand-500 text-brand-600 dark:text-brand-400'
+                    : 'text-gray-600 dark:text-gray-400'"
+                class="flex-1 px-6 py-3 text-center text-sm font-medium hover:text-gray-900 dark:hover:text-gray-300"
+            >
+                Reject Purchases
+            </button>
+        </div>
+
+        <div class="p-5">
+            @if (successMessage) {
+                <p role="status" class="mb-4 text-sm text-success-700 dark:text-success-400">{{ successMessage }}</p>
+            }
+            @if (errorMessage) {
+                <p role="alert" class="mb-4 text-sm text-error-600 dark:text-error-400">{{ errorMessage }}</p>
+            }
+
+            <form [formGroup]="form" (ngSubmit)="save()" class="space-y-6">
+                <!-- Transaction Selection -->
+                <div>
+                    <h3 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Select @if (activeTab === 'return') {
+                            Outward Order
+                        } @else if (activeTab === 'cancel') {
+                            Order to Cancel
+                        } @else {
+                            Purchase to Reject
+                        }
+                    </h3>
+
+                    <div class="max-h-96 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800">
+                        @if (filteredTransactions.length === 0) {
+                            <p class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No transactions available
+                            </p>
+                        }
+                        @for (transaction of filteredTransactions; track transaction.id) {
+                            <button
+                                type="button"
+                                (click)="selectTransaction(transaction)"
+                                [ngClass]="selectedTransaction?.id === transaction.id
+                                    ? 'bg-brand-50 border-brand-500 dark:bg-brand-900/20 dark:border-brand-500'
+                                    : 'bg-white hover:bg-gray-50 border-gray-200 dark:bg-white/5 dark:hover:bg-white/10 dark:border-gray-800'"
+                                class="w-full border-b px-4 py-3 text-start last:border-b-0"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium text-gray-800 dark:text-white/90">{{ transaction.documentNo }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                                            {{ transaction.party }} · {{ transaction.date }} · Qty: {{ getTotalQuantity(transaction) }}
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm font-medium text-gray-800 dark:text-white/90">
+                                            {{ transaction.status.replaceAll('_', ' ') | titlecase }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+                        }
+                    </div>
+
+                    @if (form.get('referenceTransactionId')?.invalid && form.get('referenceTransactionId')?.touched) {
+                        <p class="mt-1 text-xs text-error-600">Please select a transaction</p>
+                    }
+                </div>
+
+                <!-- Form Fields -->
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Date <span class="text-error-600">*</span>
+                        </label>
+                        <input
+                            type="date"
+                            formControlName="date"
+                            class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                        />
+                    </div>
+
+                    @if (activeTab !== 'cancel') {
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Quantity <span class="text-error-600">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                formControlName="quantity"
+                                class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                                min="1"
+                            />
+                            @if (form.get('quantity')?.invalid && form.get('quantity')?.touched) {
+                                <p class="mt-1 text-xs text-error-600">Quantity must be greater than 0</p>
+                            }
+                        </div>
+                    }
+
+                    <div [ngClass]="activeTab === 'cancel' ? 'md:col-span-2' : ''">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Reason <span class="text-error-600">*</span>
+                        </label>
+                        <textarea
+                            formControlName="reason"
+                            class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                            placeholder="Provide detailed reason..."
+                            rows="3"
+                        ></textarea>
+                        @if (form.get('reason')?.invalid && form.get('reason')?.touched) {
+                            <p class="mt-1 text-xs text-error-600">Reason is required</p>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes (Optional)</label>
+                    <textarea
+                        formControlName="notes"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                        placeholder="Additional notes..."
+                        rows="2"
+                    ></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex justify-end gap-3 pt-4">
+                    <button
+                        type="button"
+                        (click)="resetForm()"
+                        class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+                    >
+                        Clear
+                    </button>
+                    <button
+                        type="submit"
+                        [disabled]="isLoading"
+                        class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-6 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                    >
+                        @if (isLoading) {
+                            <span>Processing...</span>
+                        } @else {
+                            @if (activeTab === 'return') {
+                                <span>Create Return</span>
+                            } @else if (activeTab === 'cancel') {
+                                <span>Cancel Order</span>
+                            } @else {
+                                <span>Reject Purchase</span>
+                            }
+                        }
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>

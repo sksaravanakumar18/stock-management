@@ -1,0 +1,125 @@
+@if (transaction; as tx) {
+    <main class="printable-content space-y-6">
+        <div class="print-hide flex flex-wrap items-center justify-between gap-3">
+            <app-page-breadcrumb pageTitle="Transaction Details" />
+            <div class="flex gap-2">
+                <a routerLink="/transactions" class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300">
+                    Back to history
+                </a>
+                <button type="button" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600" (click)="print()">
+                    Print
+                </button>
+            </div>
+        </div>
+
+        <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <header class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Stock transaction</p>
+                    <h1 class="mt-1 text-xl font-semibold text-gray-800 dark:text-white/90">{{ tx.documentNo }}</h1>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ typeLabel(tx) }}</p>
+                </div>
+                <span class="rounded-full bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">
+          {{ statusLabel(tx) }}
+        </span>
+            </header>
+
+            <div class="grid grid-cols-1 gap-6 p-6 sm:grid-cols-3">
+                <div>
+                    <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Date</p>
+                    <p class="text-sm text-gray-800 dark:text-white/90">{{ tx.date }}</p>
+                </div>
+                <div>
+                    <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">{{ partyLabel(tx) }}</p>
+                    <p class="text-sm text-gray-800 dark:text-white/90">{{ tx.party || '—' }}</p>
+                </div>
+                <div>
+                    <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Department</p>
+                    <p class="text-sm text-gray-800 dark:text-white/90">{{ tx.department || '—' }}</p>
+                </div>
+                <div>
+                    <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Reference</p>
+                    <p class="text-sm text-gray-800 dark:text-white/90">{{ tx.reference || '—' }}</p>
+                </div>
+                <div>
+                    <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Tax type</p>
+                    <p class="text-sm text-gray-800 dark:text-white/90">{{ tx.taxType }}</p>
+                </div>
+                @if (tx.reason) {
+                    <div>
+                        <p class="mb-1 text-sm font-medium text-gray-500 dark:text-gray-400">Reason</p>
+                        <p class="text-sm text-gray-800 dark:text-white/90">{{ tx.reason }}</p>
+                    </div>
+                }
+            </div>
+
+            @if (tx.type === 'SALES_OUTWARD') {
+                <div class="mx-6 mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+                    <h2 class="mb-3 text-sm font-medium text-gray-800 dark:text-white/90">Order progress</h2>
+                    <div class="flex flex-wrap gap-3 text-sm">
+            <span [ngClass]="tx.status === 'CANCELLED' ? 'text-error-600 dark:text-error-400' : 'text-gray-700 dark:text-gray-300'">
+              Ordered
+            </span>
+                        <span class="text-gray-400">→</span>
+                        <span [ngClass]="tx.status === 'READY_FOR_DISPATCH' || tx.status === 'DISPATCHED' ? 'text-brand-500' : 'text-gray-400'">
+              Ready for dispatch
+            </span>
+                        <span class="text-gray-400">→</span>
+                        <span [ngClass]="tx.status === 'DISPATCHED' ? 'text-success-600 dark:text-success-400' : 'text-gray-400'">
+              Dispatched
+            </span>
+                    </div>
+                    @if (tx.status === 'CANCELLED') {
+                        <p class="mt-2 text-sm text-error-600 dark:text-error-400">This order was cancelled.</p>
+                    }
+                </div>
+            }
+
+            <div class="overflow-x-auto px-6">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Product</th>
+                        <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">SKU</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Qty</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Unit price</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Tax</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Line total</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                        @for (line of tx.lines; track line.id) {
+                            <tr>
+                                <td class="px-4 py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ line.productName }}</td>
+                                <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">{{ line.sku }}</td>
+                                <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">{{ line.quantity }} {{ line.unit }}</td>
+                                <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">{{ line.unitPrice | number:'1.2-2' }}</td>
+                                <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">{{ lineTax(line) | number:'1.2-2' }}</td>
+                                <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">
+                                    {{ line.quantity * line.unitPrice + lineTax(line) | number:'1.2-2' }}
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="ml-auto mt-6 max-w-sm space-y-2 border-t border-gray-100 p-6 dark:border-gray-800">
+                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                    <span>Subtotal</span><span>{{ subtotal | number:'1.2-2' }}</span>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                    <span>Tax ({{ tx.taxType }})</span><span>{{ taxTotal | number:'1.2-2' }}</span>
+                </div>
+                <div class="flex justify-between border-t border-gray-100 pt-3 font-semibold text-gray-800 dark:border-gray-800 dark:text-white/90">
+                    <span>Total</span><span>{{ grandTotal | number:'1.2-2' }}</span>
+                </div>
+            </div>
+        </section>
+    </main>
+} @else {
+    <section class="rounded-2xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-white/[0.03]">
+        <h1 class="font-medium text-gray-800 dark:text-white/90">Transaction not found</h1>
+        <a routerLink="/transactions" class="mt-4 inline-block text-sm font-medium text-brand-500">Back to transaction history</a>
+    </section>
+}

@@ -1,0 +1,235 @@
+<div class="space-y-6">
+    <app-page-breadcrumb pageTitle="Reports" />
+
+    <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
+        <button
+                type="button"
+                class="border-b-2 px-4 py-3 text-sm font-medium"
+                [ngClass]="activeTab === 'REPORTS' ? 'border-brand-500 text-brand-500' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                (click)="activeTab = 'REPORTS'"
+        >
+            Reports
+        </button>
+        <button
+                type="button"
+                class="border-b-2 px-4 py-3 text-sm font-medium"
+                [ngClass]="activeTab === 'HISTORY' ? 'border-brand-500 text-brand-500' : 'border-transparent text-gray-500 dark:text-gray-400'"
+                (click)="activeTab = 'HISTORY'"
+        >
+            Report History <span class="ms-1 text-xs">({{ history.length }})</span>
+        </button>
+    </div>
+
+    @if (activeTab === 'REPORTS') {
+        <section class="space-y-5 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+            <div>
+                <h2 class="font-medium text-gray-800 dark:text-white/90">Choose a report and filters</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Stock Summary uses transactions through the selected “As of” date. Other reports use the selected date range.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                    Report
+                    <select [(ngModel)]="reportType" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90">
+                        @for (item of reportTypes; track item.value) {
+                            <option [value]="item.value">{{ item.label }}</option>
+                        }
+                    </select>
+                </label>
+
+                @if (reportType === 'STOCK_SUMMARY') {
+                    <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        As of date
+                        <input type="date" [(ngModel)]="filters.dateTo" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90" />
+                    </label>
+                } @else {
+                    <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        From
+                        <input type="date" [(ngModel)]="filters.dateFrom" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90" />
+                    </label>
+                    <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        To
+                        <input type="date" [(ngModel)]="filters.dateTo" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90" />
+                    </label>
+                }
+
+                <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                    Department
+                    <select [(ngModel)]="filters.department" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90">
+                        <option value="">All departments</option>
+                        @for (department of departments; track department) {
+                            <option [value]="department">{{ department }}</option>
+                        }
+                    </select>
+                </label>
+
+                <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                    Category
+                    <select [(ngModel)]="filters.category" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90">
+                        <option value="">All categories</option>
+                        @for (category of categories; track category) {
+                            <option [value]="category">{{ category }}</option>
+                        }
+                    </select>
+                </label>
+
+                <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                    Product
+                    <select [(ngModel)]="filters.productId" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90">
+                        <option value="">All products</option>
+                        @for (product of products; track product.id) {
+                            <option [value]="product.id">{{ product.name }} ({{ product.sku }})</option>
+                        }
+                    </select>
+                </label>
+
+                @if (reportType !== 'STOCK_SUMMARY') {
+                    <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        Transaction type
+                        <select [(ngModel)]="filters.transactionType" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90">
+                            <option value="ALL">All types</option>
+                            @for (type of transactionTypes; track type.value) {
+                                <option [value]="type.value">{{ type.label }}</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        Tax type
+                        <select [(ngModel)]="filters.taxType" class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700 dark:text-white/90">
+                            <option value="ALL">All tax types</option>
+                            <option value="GST">GST</option>
+                            <option value="VAT">VAT</option>
+                            <option value="NONE">No tax</option>
+                        </select>
+                    </label>
+                }
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button type="button" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600" (click)="runReport()">
+                    Run Report
+                </button>
+                @if (rows.length) {
+                    <button type="button" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800" (click)="exportCsv()">
+                        Export CSV
+                    </button>
+                }
+            </div>
+        </section>
+
+        @if (rows.length) {
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Rows</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ rows.length }}</p>
+                </section>
+                <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Quantity</p>
+                    <p class="mt-2 text-2xl font-semibold text-gray-800 dark:text-white/90">{{ totalQuantity }}</p>
+                </section>
+                @if (reportType !== 'STOCK_SUMMARY') {
+                    <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Amount / Tax</p>
+                        <p class="mt-2 text-lg font-semibold text-gray-800 dark:text-white/90">{{ totalAmount | number:'1.2-2' }} / {{ totalTax | number:'1.2-2' }}</p>
+                    </section>
+                }
+            </div>
+
+            <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+                <div class="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+                    <h2 class="font-medium text-gray-800 dark:text-white/90">{{ reportLabel(reportType) }}</h2>
+                </div>
+                <div class="overflow-x-auto p-5">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                            @if (reportType === 'STOCK_SUMMARY') {
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Product</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Category</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Department</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">On hand</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Reserved</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Available</th>
+                            } @else {
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Date / Document</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Product</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Department / Party</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Amount</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Tax</th>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
+                            }
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                            @for (row of rows; track row.id) {
+                                <tr>
+                                    @if (reportType === 'STOCK_SUMMARY') {
+                                        <td class="px-4 py-3 text-sm text-gray-800 dark:text-white/90">{{ row.productName }} <span class="text-gray-500">({{ row.sku }})</span></td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ row.category }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ row.department || '—' }}</td>
+                                        <td class="px-4 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ row.onHand }} {{ row.unit }}</td>
+                                        <td class="px-4 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ row.reserved }} {{ row.unit }}</td>
+                                        <td class="px-4 py-3 text-end text-sm font-medium text-gray-800 dark:text-white/90">{{ row.available }} {{ row.unit }}</td>
+                                    } @else {
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ row.date }}<span class="block text-xs">{{ row.documentNo }}</span></td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ row.type }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-800 dark:text-white/90">{{ row.productName }}<span class="block text-xs text-gray-500">{{ row.sku }}</span></td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ row.department || '—' }}<span class="block text-xs text-gray-500">{{ row.party }}</span></td>
+                                        <td class="px-4 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ row.quantity }} {{ row.unit }}</td>
+                                        <td class="px-4 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ row.amount | number:'1.2-2' }}</td>
+                                        <td class="px-4 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ row.tax | number:'1.2-2' }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ row.status }}</td>
+                                    }
+                                </tr>
+                            } @empty {
+                                <tr><td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No results match these filters.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        }
+    } @else {
+        <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <div class="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+                <h2 class="font-medium text-gray-800 dark:text-white/90">Generated report history</h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Select a run to reopen its saved results.</p>
+            </div>
+            <div class="overflow-x-auto p-5">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Generated</th>
+                        <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Report</th>
+                        <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Filters</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Rows</th>
+                        <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                        @for (run of history; track run.id) {
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{{ run.generatedAt | date:'medium' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-800 dark:text-white/90">{{ run.label }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                                    {{ run.filters.dateFrom || 'Any date' }} – {{ run.filters.dateTo || 'Today' }}
+                                </td>
+                                <td class="px-4 py-3 text-end text-sm text-gray-600 dark:text-gray-300">{{ run.rows.length }}</td>
+                                <td class="px-4 py-3 text-end">
+                                    <button type="button" class="text-sm font-medium text-brand-500" (click)="viewHistory(run)">View</button>
+                                </td>
+                            </tr>
+                        } @empty {
+                            <tr><td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-gray-400">No reports have been generated in this session.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    }
+</div>

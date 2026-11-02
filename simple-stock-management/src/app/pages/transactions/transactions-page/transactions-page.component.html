@@ -1,0 +1,356 @@
+<div class="space-y-6">
+    <app-page-breadcrumb pageTitle="Transactions" />
+
+    <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="flex flex-col gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <h2 class="font-medium text-gray-800 dark:text-white/90">Transaction Register</h2>
+
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <input
+                            type="search"
+                            aria-label="Search transactions"
+                            placeholder="Search records"
+                            [value]="searchTerm"
+                            (input)="onSearchInput($event)"
+                            class="h-10 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 sm:w-56 dark:border-gray-700 dark:text-white/90"
+                    />
+                    <button
+                            type="button"
+                            class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600"
+                            (click)="openEntry()"
+                    >
+                        New Transaction
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2" aria-label="Filter transactions">
+                <button type="button" class="rounded-lg px-3 py-1.5 text-sm"
+                        [ngClass]="filter === 'ALL' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+                        (click)="filter = 'ALL'">All</button>
+                <button type="button" class="rounded-lg px-3 py-1.5 text-sm"
+                        [ngClass]="filter === 'INWARD' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+                        (click)="filter = 'INWARD'">Inward</button>
+                <button type="button" class="rounded-lg px-3 py-1.5 text-sm"
+                        [ngClass]="filter === 'OUTWARD' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+                        (click)="filter = 'OUTWARD'">Outward</button>
+                <button type="button" class="rounded-lg px-3 py-1.5 text-sm"
+                        [ngClass]="filter === 'READY' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+                        (click)="filter = 'READY'">Ready for Dispatch</button>
+                <button type="button" class="rounded-lg px-3 py-1.5 text-sm"
+                        [ngClass]="filter === 'DISPATCHED' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+                        (click)="filter = 'DISPATCHED'">Dispatched</button>
+                <button type="button" class="rounded-lg px-3 py-1.5 text-sm"
+                        [ngClass]="filter === 'OTHER' ? 'bg-brand-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+                        (click)="filter = 'OTHER'">Returns / Rejections / Adjustments</button>
+            </div>
+        </div>
+
+        @if (message) {
+            <p role="status" class="px-5 pt-4 text-sm text-success-700 dark:text-success-400">{{ message }}</p>
+        }
+        @if (errorMessage) {
+            <p role="alert" class="px-5 pt-4 text-sm text-error-600 dark:text-error-400">{{ errorMessage }}</p>
+        }
+
+        <div class="overflow-x-auto p-5">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Document</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Type</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Date</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Party</th>
+                    <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                    @for (transaction of transactions; track transaction.id) {
+                        <tr>
+                            <td class="px-4 py-4 text-sm font-medium text-gray-800 dark:text-white/90">
+                                <button
+                                        type="button"
+                                        class="text-start text-sm font-medium text-brand-500 hover:text-brand-600"
+                                        (click)="openDetails(transaction)"
+                                >
+                                    {{ transaction.documentNo }}
+                                </button>
+
+                                @if (transaction.relatedTransactionId) {
+                                    <span class="mt-1 block text-xs font-normal text-gray-500 dark:text-gray-400">
+      Restock for {{ transaction.reference }}
+    </span>
+                                }
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ typeLabel(transaction.type) }}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">{{ transaction.date }}</td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">{{ transaction.party || '—' }}</td>
+                            <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">
+                                {{ totalQuantity(transaction) }}
+                            </td>
+                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                                {{ statusLabel(transaction.status) }}
+                            </td>
+                            <td class="px-4 py-4 text-end">
+                                <div class="inline-flex flex-wrap justify-end gap-2">
+                                    @if (isOutward(transaction) && transaction.status === 'ORDERED') {
+                                        <button type="button" class="text-sm font-medium text-brand-500"
+                                                (click)="markReady(transaction)">Mark Ready</button>
+                                    }
+                                    @if (isOutward(transaction) && transaction.status === 'READY_FOR_DISPATCH') {
+                                        <button type="button" class="text-sm font-medium text-brand-500"
+                                                (click)="dispatch(transaction)">Dispatch</button>
+                                    }
+                                    @if (isOutward(transaction) && transaction.status !== 'CANCELLED') {
+                                        <button type="button" class="text-sm font-medium text-error-600 dark:text-error-400"
+                                                (click)="cancelOutward(transaction)">
+                                            {{ transaction.status === 'DISPATCHED' ? 'Cancel / Restock' : 'Cancel Order' }}
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    } @empty {
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                No transactions match this filter.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+    @if (showEntryModal) {
+        <div class="fixed inset-0 z-[100000] overflow-y-auto bg-gray-950/50 p-4" (click)="closeEntry()">
+            <section
+                    class="mx-auto my-6 w-full max-w-6xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-900"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="transaction-modal-title"
+                    (click)="$event.stopPropagation()"
+            >
+                <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5 dark:border-gray-800">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Inventory document</p>
+                        <h2 id="transaction-modal-title" class="mt-1 text-lg font-semibold text-gray-800 dark:text-white/90">
+                            {{ typeLabel(form.type) }}
+                        </h2>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Add document details and product lines before recording this transaction.
+                        </p>
+                    </div>
+                    <button type="button" class="text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white" (click)="closeEntry()">
+                        Close
+                    </button>
+                </div>
+
+                <form class="space-y-6 p-6" (ngSubmit)="saveTransaction()">
+                    <section class="grid grid-cols-1 gap-4 rounded-xl border border-gray-200 p-5 sm:grid-cols-2 xl:grid-cols-4 dark:border-gray-800">
+                        <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                            <span>Operation</span>
+                            <select name="type" [(ngModel)]="form.type" (ngModelChange)="onTransactionTypeChange()"
+                                    class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 dark:border-gray-700 dark:bg-gray-900">
+                                @for (type of transactionTypes; track type.value) {
+                                    <option [value]="type.value">{{ type.label }}</option>
+                                }
+                            </select>
+                        </label>
+
+                        <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                            <span>Document number</span>
+                            <input name="documentNo" [(ngModel)]="form.documentNo" required
+                                   class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700" />
+                        </label>
+
+                        <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                            <span>Date</span>
+                            <input name="date" type="date" [(ngModel)]="form.date" required
+                                   class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700" />
+                        </label>
+
+                        <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                            <span>Department</span>
+                            <select name="department" [(ngModel)]="form.department"
+                                    class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700">
+                                <option value="">Select Department</option>
+                                @for (dept of departments; track dept.id) {
+                                    <option [value]="dept.name">{{ dept.name }}</option>
+                                }
+                            </select>
+                        </label>
+
+                        @if (requiresParty()) {
+                            <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                <span>{{ partyLabel() }}</span>
+                                @if (form.type === 'PURCHASE_INWARD') {
+                                    <select name="party" [(ngModel)]="form.party" required
+                                           class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700">
+                                        <option value="">Select Supplier</option>
+                                        @for (supplier of suppliers; track supplier.id) {
+                                            <option [value]="supplier.id">{{ supplier.name }}</option>
+                                        }
+                                    </select>
+                                } @else {
+                                    <select name="party" [(ngModel)]="form.party" required
+                                           class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700">
+                                        <option value="">Select Customer</option>
+                                        @for (customer of customers; track customer.id) {
+                                            <option [value]="customer.id">{{ customer.name }}</option>
+                                        }
+                                    </select>
+                                }
+                            </label>
+                        }
+
+                        <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                            <span>Reference</span>
+                            <input name="reference" [(ngModel)]="form.reference"
+                                   class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700" />
+                        </label>
+
+                        @if (form.type === 'PURCHASE_INWARD' || form.type === 'SALES_OUTWARD' || form.type === 'SALES_RETURN') {
+                            <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                <span>Tax type</span>
+                                <select name="taxType" [(ngModel)]="form.taxType"
+                                        class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 dark:border-gray-700 dark:bg-gray-900">
+                                    <option value="NONE">No tax</option>
+                                    <option value="GST">GST</option>
+                                    <option value="VAT">VAT</option>
+                                </select>
+                            </label>
+                        }
+
+                        @if (form.type === 'SALES_RETURN') {
+                            <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300">
+                                <span>Returned item condition</span>
+                                <select name="returnCondition" [(ngModel)]="form.returnCondition"
+                                        class="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 dark:border-gray-700 dark:bg-gray-900">
+                                    <option value="GOOD">Good</option>
+                                    <option value="DAMAGED">Damaged</option>
+                                </select>
+                            </label>
+                        }
+
+                        @if (requiresReason()) {
+                            <label class="space-y-1.5 text-sm text-gray-700 dark:text-gray-300 sm:col-span-2">
+                                <span>Reason</span>
+                                <input name="reason" [(ngModel)]="form.reason" required
+                                       class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700" />
+                            </label>
+                        }
+                    </section>
+
+                    <section class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+                            <div>
+                                <h3 class="font-medium text-gray-800 dark:text-white/90">Product lines</h3>
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add each product included on this document.</p>
+                            </div>
+                            <button type="button" class="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-700" (click)="addLine()">
+                                Add product
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-[900px] w-full divide-y divide-gray-200 dark:divide-gray-800">
+                                <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Product / SKU</th>
+                                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Unit price</th>
+                                    <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Tax %</th>
+                                    <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Line total</th>
+                                    <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400"> </th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                                    @for (line of lines; track line.id) {
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <select
+                                                        [name]="'product-' + line.id"
+                                                        [(ngModel)]="line.sku"
+                                                        (ngModelChange)="selectProduct(line)"
+                                                        class="h-10 w-44 rounded-lg border border-gray-300 bg-transparent px-3 dark:border-gray-700"
+                                                >
+                                                    <option value="">Select product</option>
+                                                    @for (product of filteredProducts; track product.id) {
+                                                        <option [value]="product.sku">{{ product.sku }} - {{ product.name }}</option>
+                                                    }
+                                                </select>
+                                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ line.productName }}</p>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input [name]="'qty-' + line.id" type="number" min="0.01" step="0.01"
+                                                       [(ngModel)]="line.quantity"
+                                                       class="h-10 w-24 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700" />
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input [name]="'price-' + line.id" type="number" min="0" step="0.01"
+                                                       [(ngModel)]="line.unitPrice"
+                                                       class="h-10 w-28 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700" />
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <input [name]="'tax-' + line.id" type="number" min="0" max="100" step="0.01"
+                                                       [(ngModel)]="line.taxRate"
+                                                       class="h-10 w-20 rounded-lg border border-gray-300 bg-transparent px-2 dark:border-gray-700" />
+                                            </td>
+                                            <td class="px-4 py-3 text-end text-sm font-medium text-gray-800 dark:text-white/90">
+                                                {{ lineTotal(line) | number:'1.2-2' }}
+                                            </td>
+                                            <td class="px-4 py-3 text-end">
+                                                <button type="button" class="text-sm text-error-600 disabled:opacity-40"
+                                                        [disabled]="lines.length === 1" (click)="removeLine(line.id)">
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    @if (form.type === 'SALES_OUTWARD') {
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            Saving an outward order reserves its quantity. Stock is reduced when the order is dispatched.
+                        </p>
+                    }
+
+                    <div class="flex flex-col gap-5 border-t border-gray-100 pt-5 sm:flex-row sm:items-end sm:justify-between dark:border-gray-800">
+                        @if (errorMessage) {
+                            <p role="alert" class="text-sm text-error-600 dark:text-error-400">{{ errorMessage }}</p>
+                        }
+
+                        <div class="w-full space-y-2 sm:ms-auto sm:max-w-xs">
+                            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                <span>Subtotal</span><span>{{ subtotal | number:'1.2-2' }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                <span>Tax ({{ form.taxType }})</span><span>{{ taxTotal | number:'1.2-2' }}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-gray-100 pt-3 font-semibold text-gray-800 dark:border-gray-800 dark:text-white/90">
+                                <span>Total</span><span>{{ grandTotal | number:'1.2-2' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button type="button" class="rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-700" (click)="closeEntry()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
+                            Record Transaction
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    }
+</div>

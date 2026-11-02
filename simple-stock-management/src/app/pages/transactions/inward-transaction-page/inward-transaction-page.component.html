@@ -1,0 +1,224 @@
+<div class="space-y-6">
+    <app-page-breadcrumb pageTitle="Stock Inward Transaction" />
+
+    <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+            <h2 class="font-medium text-gray-800 dark:text-white/90">Create Inward Transaction</h2>
+        </div>
+
+        @if (successMessage) {
+            <p role="status" class="mx-5 mt-4 text-sm text-success-700 dark:text-success-400">{{ successMessage }}</p>
+        }
+        @if (errorMessage) {
+            <p role="alert" class="mx-5 mt-4 text-sm text-error-600 dark:text-error-400">{{ errorMessage }}</p>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="save()" class="space-y-6 p-5">
+            <!-- Basic Information -->
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Document No <span class="text-error-600">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        formControlName="documentNo"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                        placeholder="e.g., PO-2024-001"
+                    />
+                    @if (form.get('documentNo')?.invalid && form.get('documentNo')?.touched) {
+                        <p class="mt-1 text-xs text-error-600">Document number is required</p>
+                    }
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Department <span class="text-error-600">*</span>
+                    </label>
+                    <select
+                        formControlName="departmentId"
+                        (change)="onDepartmentChange()"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                    >
+                        <option value="">Select Department</option>
+                        @for (department of departments; track department.id) {
+                            <option [value]="department.id">{{ department.name }}</option>
+                        }
+                    </select>
+                    @if (form.get('departmentId')?.invalid && form.get('departmentId')?.touched) {
+                        <p class="mt-1 text-xs text-error-600">Department is required</p>
+                    }
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Supplier <span class="text-error-600">*</span>
+                    </label>
+                    <select
+                        formControlName="supplierId"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                    >
+                        <option value="">Select Supplier</option>
+                        @for (supplier of suppliers; track supplier.id) {
+                            <option [value]="supplier.id">{{ supplier.name }}</option>
+                        }
+                    </select>
+                    @if (form.get('supplierId')?.invalid && form.get('supplierId')?.touched) {
+                        <p class="mt-1 text-xs text-error-600">Supplier is required</p>
+                    }
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Transaction Date <span class="text-error-600">*</span>
+                    </label>
+                    <input
+                        type="date"
+                        formControlName="transactionDate"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
+                    <textarea
+                        formControlName="notes"
+                        class="mt-2 block w-full rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                        placeholder="Additional notes..."
+                        rows="3"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Line Items Table -->
+            <div>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Line Items</h3>
+                    <button
+                        type="button"
+                        (click)="addLineItem()"
+                        class="inline-flex h-8 items-center justify-center rounded-lg bg-brand-500 px-3 text-xs font-medium text-white hover:bg-brand-600"
+                    >
+                        + Add Line
+                    </button>
+                </div>
+
+                <div class="mt-4 overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                        <thead class="bg-gray-50 dark:bg-gray-900">
+                            <tr>
+                                <th class="px-4 py-3 text-start text-sm font-medium text-gray-500 dark:text-gray-400">Product</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Quantity</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Unit Price</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Tax %</th>
+                                <th class="px-4 py-3 text-end text-sm font-medium text-gray-500 dark:text-gray-400">Line Total</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 dark:text-gray-400">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                            @for (line of lineItems; track line.id; let i = $index) {
+                                <tr>
+                                    <td class="px-4 py-4">
+                                        <select
+                                            [(ngModel)]="line.productId"
+                                            (change)="updateProductPrice(line)"
+                                            class="block w-full rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-800 dark:border-gray-700 dark:text-white/90"
+                                        >
+                                            <option value="">Select Product</option>
+                                            @for (product of filteredProducts; track product.id) {
+                                                <option [value]="product.id">{{ product.name }} ({{ product.sku }})</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <input
+                                            type="number"
+                                            [(ngModel)]="line.quantity"
+                                            [ngModelOptions]="{updateOn: 'blur'}"
+                                            class="block w-20 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-end text-sm text-gray-800 dark:border-gray-700 dark:text-white/90"
+                                            min="1"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <input
+                                            type="number"
+                                            [(ngModel)]="line.unitPrice"
+                                            [ngModelOptions]="{updateOn: 'blur'}"
+                                            class="block w-24 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-end text-sm text-gray-800 dark:border-gray-700 dark:text-white/90"
+                                            min="0"
+                                            step="0.01"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <input
+                                            type="number"
+                                            [(ngModel)]="line.taxRate"
+                                            [ngModelOptions]="{updateOn: 'blur'}"
+                                            class="block w-20 rounded-lg border border-gray-300 bg-transparent px-2 py-1 text-end text-sm text-gray-800 dark:border-gray-700 dark:text-white/90"
+                                            min="0"
+                                            max="100"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-4 text-end text-sm text-gray-600 dark:text-gray-300">
+                                        {{ (line.quantity * line.unitPrice * (1 + line.taxRate / 100)) | number: '1.2-2' }}
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <button
+                                            type="button"
+                                            (click)="removeLineItem(i)"
+                                            class="text-error-600 hover:text-error-700 dark:text-error-400"
+                                        >
+                                            Remove
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Totals -->
+            <div class="flex justify-end">
+                <div class="w-full max-w-xs space-y-2 rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                        <span class="text-gray-800 dark:text-white/90">{{ subtotal | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">Tax:</span>
+                        <span class="text-gray-800 dark:text-white/90">{{ taxTotal | number: '1.2-2' }}</span>
+                    </div>
+                    <div class="border-t border-gray-200 pt-2 dark:border-gray-800">
+                        <div class="flex justify-between font-medium text-gray-800 dark:text-white/90">
+                            <span>Total Value:</span>
+                            <span>{{ totalValue | number: '1.2-2' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex justify-end gap-3 pt-4">
+                <button
+                    type="button"
+                    (click)="resetForm()"
+                    class="inline-flex h-10 items-center justify-center rounded-lg border border-gray-300 px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+                >
+                    Reset
+                </button>
+                <button
+                    type="submit"
+                    [disabled]="isLoading"
+                    class="inline-flex h-10 items-center justify-center rounded-lg bg-brand-500 px-6 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                >
+                    @if (isLoading) {
+                        <span>Saving...</span>
+                    } @else {
+                        <span>Save Transaction</span>
+                    }
+                </button>
+            </div>
+        </form>
+    </section>
+</div>

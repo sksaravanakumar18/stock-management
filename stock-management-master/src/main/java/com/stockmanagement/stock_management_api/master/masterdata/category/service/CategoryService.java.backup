@@ -1,0 +1,79 @@
+package com.stockmanagement.stock_management_api.master.masterdata.category.service;
+
+import com.stockmanagement.stock_management_api.master.masterdata.category.dto.CategoryRequest;
+import com.stockmanagement.stock_management_api.master.masterdata.category.dto.CategoryResponse;
+import com.stockmanagement.stock_management_api.master.masterdata.category.entity.Category;
+import com.stockmanagement.stock_management_api.master.masterdata.category.repository.CategoryRepository;
+import com.stockmanagement.stock_management_api.master.masterdata.product.repository.ProductRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class CategoryService {
+    private final CategoryRepository repository;
+    private final ProductRepository productRepository;
+
+    public CategoryService(CategoryRepository repository, ProductRepository productRepository) {
+        this.repository = repository;
+        this.productRepository = productRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> findAll(Boolean active, String search) {
+        String normalizedSearch = (search == null) ? "" : search.trim();
+        return repository.findFiltered(active, normalizedSearch)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryResponse findById(UUID id) {
+        return toResponse(findEntity(id));
+    }
+
+    @Transactional
+    public CategoryResponse create(CategoryRequest request) {
+        Category entity = new Category();
+        apply(entity, request);
+        return toResponse(repository.save(entity));
+    }
+
+    @Transactional
+    public CategoryResponse update(UUID id, CategoryRequest request) {
+        Category entity = findEntity(id);
+        apply(entity, request);
+        return toResponse(repository.save(entity));
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        Category entity = findEntity(id);
+        if (productRepository.countByCategoryId(id) > 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cannot delete category because it is assigned to one or more products.");
+        }
+        entity.setIsActive(false);
+        repository.save(entity);
+    }
+
+    private Category findEntity(UUID id) {
+        return repository.findById(id).orElseThrow(() ->
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found: " + id));
+    }
+
+    private void apply(Category entity, CategoryRequest request) {
+        entity.setName(request.name());
+        entity.setCode(request.code());
+        entity.setDescription(request.description());
+        entity.setIsActive(request.isActive());
+    }
+
+    private CategoryResponse toResponse(Category entity) {
+        return new CategoryResponse(entity.getId(), entity.getName(), entity.getCode(), entity.getDescription(), entity.getIsActive());
+    }
+}

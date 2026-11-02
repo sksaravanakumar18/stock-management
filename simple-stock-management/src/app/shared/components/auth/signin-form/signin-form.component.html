@@ -1,0 +1,79 @@
+<main class="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10 dark:bg-gray-900">
+    <section class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm sm:p-8 dark:border-gray-800 dark:bg-white/[0.03]">
+        <a routerLink="/" class="mb-8 inline-flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-white/90">
+            <img src="/images/logo/logo-icon.svg" alt="" width="32" height="32" />
+            Stock Management
+        </a>
+
+        <div class="mb-6">
+            <h1 class="text-title-sm font-semibold text-gray-800 dark:text-white/90">Sign in</h1>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Enter your account credentials to access inventory.
+            </p>
+        </div>
+
+        <form class="space-y-5" (ngSubmit)="onSignIn()">
+            <div>
+                <label for="signin-email" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Username / Email
+                </label>
+                <input
+                        id="signin-email"
+                        name="email"
+                        type="text"
+                        autocomplete="username"
+                        required
+                        [(ngModel)]="email"
+                        placeholder="admin@stock.local"
+                        class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                />
+            </div>
+
+            <div>
+                <label for="signin-password" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Password
+                </label>
+                <div class="relative">
+                    <input
+                            id="signin-password"
+                            name="password"
+                            [type]="showPassword ? 'text' : 'password'"
+                            autocomplete="current-password"
+                            required
+                            [(ngModel)]="password"
+                            placeholder="Enter your password"
+                            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 pe-20 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:text-white/90"
+                    />
+                    <button
+                            type="button"
+                            class="absolute inset-y-0 end-3 text-sm text-brand-500"
+                            (click)="showPassword = !showPassword"
+                    >
+                        {{ showPassword ? 'Hide' : 'Show' }}
+                    </button>
+                </div>
+            </div>
+
+            <label class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <input
+                        type="checkbox"
+                        name="keepSignedIn"
+                        [(ngModel)]="keepSignedIn"
+                        class="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                Keep me signed in
+            </label>
+
+            @if (errorMessage) {
+                <p role="alert" class="text-sm text-error-600 dark:text-error-400">{{ errorMessage }}</p>
+            }
+
+            <button
+                    type="submit"
+                    class="h-11 w-full rounded-lg bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-600"
+            >
+                Sign in
+            </button>
+        </form>
+    </section>
+</main>
